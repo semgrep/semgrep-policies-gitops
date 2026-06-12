@@ -1,15 +1,18 @@
 """GitOps reconciler CLI for Semgrep policies.
 
-Three verbs model the GitOps loop:
+Four verbs model the GitOps loop:
 
-  export  pull the live state into the YAML files (bootstrap or drift repair)
-  plan    dry-run every bundle and print the diff; exit non-zero if anything
-          would change (so CI can gate a PR on "no drift")
-  apply   strictly apply every YAML file, using the etag from a fresh read as
-          If-Match so a concurrent UI change is caught as a conflict
+  validate  parse and structurally check the YAML files offline (no token,
+            no network) — catches malformed YAML and wrong shapes fast
+  export    pull the live state into the YAML files (bootstrap or drift repair)
+  plan      dry-run every bundle and print the diff; the API validates values
+            and references, so a bad value fails here
+  apply     strictly apply every YAML file, using the etag from a fresh read
+            as If-Match so a concurrent UI change is caught as a conflict
 
-Run `python -m reconciler.cli <verb> --deployment-id <id>`; the token comes
-from the SEMGREP_API_TOKEN environment variable.
+`validate` runs offline; `export`, `plan`, and `apply` take
+`--deployment-id <id>` and read the token from the SEMGREP_API_TOKEN
+environment variable.
 """
 
 from __future__ import annotations
@@ -30,6 +33,30 @@ _DETECTION_TARGETS = [
     (bundles.DETECTION_CODE_FILE, "code"),
     (bundles.DETECTION_SECRETS_FILE, "secrets"),
 ]
+
+
+def cmd_validate() -> int:
+    """Offline structural validation of the policy files.
+
+    Catches malformed YAML and wrong shapes without a token or network, so
+    contributors (and fork PRs) get fast, local feedback before the API
+    round-trip in `plan`.
+    """
+    checked = 0
+    for path, _ in _DETECTION_TARGETS:
+        raw = bundles.read_yaml(path)
+        if not raw:
+            continue
+        bundles.validate_detection(path, raw)
+        checked += 1
+
+    remediation_raw = bundles.read_yaml(bundles.REMEDIATION_FILE)
+    if remediation_raw:
+        bundles.validate_remediation(bundles.REMEDIATION_FILE, remediation_raw)
+        checked += 1
+
+    print(f"validate: {checked} policy file(s) are well-formed")
+    return 0
 
 
 def _print_detection_diff(product: str, diff: dict[str, Any]) -> bool:
@@ -140,13 +167,15 @@ def cmd_apply(client: PoliciesClient) -> int:
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
-        "command", choices=["export", "plan", "apply"], help="the reconciler verb"
+        "command",
+        choices=["validate", "export", "plan", "apply"],
+        help="the reconciler verb",
     )
     parser.add_argument(
         "--deployment-id",
         type=int,
-        required=True,
-        help="numeric Semgrep deployment id",
+        default=None,
+        help="numeric Semgrep deployment id (required except for validate)",
     )
     parser.add_argument(
         "--base-url",
@@ -164,13 +193,26 @@ def main(argv: list[str] | None = None) -> int:
     )
     args = parser.parse_args(argv)
 
-    client = PoliciesClient(args.deployment_id, base_url=args.base_url)
     try:
+        # validate is fully offline: no token, no deployment id.
+        if args.command == "validate":
+            return cmd_validate()
+
+        if args.deployment_id is None:
+            parser.error(f"{args.command} requires --deployment-id")
+        client = PoliciesClient(args.deployment_id, base_url=args.base_url)
         if args.command == "export":
             return cmd_export(client)
         if args.command == "plan":
+            # Structural validation first, so malformed YAML fails fast and
+            # locally rather than as an opaque API error.
+            cmd_validate()
             return cmd_plan(client, fail_on_diff=args.fail_on_diff)
+        cmd_validate()
         return cmd_apply(client)
+    except bundles.BundleError as err:
+        print(f"error: {err}", file=sys.stderr)
+        return 2
     except PoliciesApiError as err:
         print(f"error: {err}", file=sys.stderr)
         if err.code == "STATE_VERSION_MISMATCH":

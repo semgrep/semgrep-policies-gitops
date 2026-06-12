@@ -48,15 +48,19 @@ export SEMGREP_API_TOKEN="<your web API token>"   # never commit this
 # Bootstrap the YAML from your live deployment:
 uv run python -m reconciler.cli export --deployment-id <id>
 
-# Edit policies/*.yaml, then preview what an apply would change:
+# Edit policies/*.yaml, then check them offline (no token needed):
+uv run python -m reconciler.cli validate
+
+# Preview what an apply would change against the live deployment:
 uv run python -m reconciler.cli plan --deployment-id <id>
 
 # Apply (this is what CI runs on merge):
 uv run python -m reconciler.cli apply --deployment-id <id>
 ```
 
-`plan` exits non-zero when the live state differs from this repo, so CI can
-require "no pending changes" before merge.
+`validate` is offline and structural; `plan` adds the server-side semantic
+check and prints the diff. On the nightly drift check, `plan --fail-on-diff`
+exits non-zero when the live state has drifted from this repo.
 
 ## The policy files
 
@@ -94,18 +98,24 @@ The workflows expect two repository settings:
   Actions secret; it is never read from the repo.
 - **Variable** `SEMGREP_DEPLOYMENT_ID` — your numeric deployment id.
 
-- `plan.yml` runs on pull requests touching `policies/` — it dry-runs the
-  PR's policies and prints the diff for the reviewer. A pending diff is the
-  change under review, so it passes; only an **invalid** bundle (a
-  validation error like an unknown rule or `block` without `pr_comment`)
-  fails the check.
+The PR checks are layered, cheapest first:
+
+- `validate.yml` runs on every PR (and needs no token, so it works on PRs
+  from forks): it parses the YAML and checks its shape offline. Malformed
+  YAML or a wrong-shaped policy fails here, fast, before any network call.
+- `plan.yml` dry-runs the PR's policies against the live deployment and
+  prints the diff. A pending diff is the change under review, so it passes;
+  the API's semantic validation fails it on a bad **value** or reference
+  (an unknown rule, a typo'd severity, `block` without `pr_comment`).
 - `apply.yml` runs on every merge to `main` (and on demand): a merge writes
   to the deployment immediately. This is the only path that writes.
 - `drift.yml` runs nightly (and on demand), read-only: it runs
   `plan --fail-on-diff`, so it fails if the live state has been changed in
   the UI out of band — but it never writes.
 
-Every action is pinned to a full commit SHA.
+So `validate` catches structural mistakes locally and offline, while `plan`
+catches semantic ones (values, references, action dependencies) that only
+the server can judge. Every action is pinned to a full commit SHA.
 
 ## Requirements
 

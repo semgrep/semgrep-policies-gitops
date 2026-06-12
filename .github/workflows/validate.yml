@@ -1,0 +1,30 @@
+# Fast, offline structural validation of the policy files. Needs no token
+# and no network, so it runs on every PR — including PRs from forks, which
+# do not receive repository secrets — and catches malformed YAML or
+# wrong-shaped policies before the API round-trip in plan.yml.
+name: validate
+
+on:
+  pull_request:
+    paths:
+      - "policies/**"
+      - "reconciler/**"
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: step-security/harden-runner@9af89fc71515a100421586dfdb3dc9c984fbf411 # v2.19.4
+        with:
+          egress-policy: audit
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - uses: astral-sh/setup-uv@fac544c07dec837d0ccb6301d7b5580bf5edae39 # v8.2.0
+      - run: uv sync --frozen
+      - run: uv run pytest -q
+      - name: Validate policy files
+        run: uv run python -m reconciler.cli validate

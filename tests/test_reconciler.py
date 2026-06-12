@@ -134,6 +134,57 @@ def test_plan_with_pending_diff_fails_when_gating_on_drift():
     assert cli.cmd_plan(_client(), fail_on_diff=True) == 1
 
 
+def test_validate_accepts_the_shipped_policies():
+    # The policy files in this repo must always pass offline validation.
+    assert cli.cmd_validate() == 0
+
+
+def test_read_yaml_rejects_malformed_yaml(tmp_path):
+    bad = tmp_path / "remediation.yaml"
+    bad.write_text("policies:\n  - name: x\n   actions: oops\n")  # bad indent
+    with pytest.raises(bundles.BundleError, match="not valid YAML"):
+        bundles.read_yaml(bad)
+
+
+def test_read_yaml_rejects_non_utf8(tmp_path):
+    bad = tmp_path / "remediation.yaml"
+    bad.write_bytes(b"\xff\xfe policies: []")
+    with pytest.raises(bundles.BundleError, match="UTF-8"):
+        bundles.read_yaml(bad)
+
+
+def test_read_yaml_rejects_oversize_file(tmp_path):
+    big = tmp_path / "remediation.yaml"
+    big.write_text("policies: []\n" + "# pad\n" * 200_000)
+    with pytest.raises(bundles.BundleError, match="over the"):
+        bundles.read_yaml(big)
+
+
+def test_read_yaml_rejects_non_mapping(tmp_path):
+    bad = tmp_path / "remediation.yaml"
+    bad.write_text("- just\n- a\n- list\n")
+    with pytest.raises(bundles.BundleError, match="must be a YAML mapping"):
+        bundles.read_yaml(bad)
+
+
+def test_validate_remediation_rejects_actionless_policy(tmp_path):
+    path = tmp_path / "remediation.yaml"
+    raw = {"policies": [{"name": "x", "filters": {"mode": "all"}, "actions": []}]}
+    with pytest.raises(bundles.BundleError, match="at least one action"):
+        bundles.validate_remediation(path, raw)
+
+
+def test_validate_detection_rejects_exception_with_both_scopes(tmp_path):
+    path = tmp_path / "detection-code.yaml"
+    raw = {
+        "exceptions": [
+            {"project": "a", "project_tag_name": "b", "rule": "x", "rule_type": "rule"}
+        ]
+    }
+    with pytest.raises(bundles.BundleError, match="exactly one"):
+        bundles.validate_detection(path, raw)
+
+
 @responses.activate
 def test_plan_main_returns_2_on_invalid_bundle(monkeypatch):
     monkeypatch.setenv("SEMGREP_API_TOKEN", "fake-token")

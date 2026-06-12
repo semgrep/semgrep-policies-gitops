@@ -12,6 +12,11 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  # One plan per PR; a new push supersedes an in-flight run.
+  group: semgrep-policies-plan-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   plan:
     runs-on: ubuntu-latest
