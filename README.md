@@ -100,13 +100,17 @@ The workflows expect two repository settings:
 
 The PR checks are layered, cheapest first:
 
-- `validate.yml` runs on every PR (and needs no token, so it works on PRs
-  from forks): it parses the YAML and checks its shape offline. Malformed
-  YAML or a wrong-shaped policy fails here, fast, before any network call.
+- `validate.yml` runs on PRs that touch `policies/` (and needs no token, so
+  it works on PRs from forks): it parses the YAML and checks its shape
+  offline. Malformed YAML or a wrong-shaped policy fails here, fast, before
+  any network call.
 - `plan.yml` dry-runs the PR's policies against the live deployment and
   prints the diff. A pending diff is the change under review, so it passes;
   the API's semantic validation fails it on a bad **value** or reference
   (an unknown rule, a typo'd severity, `block` without `pr_comment`).
+- `test.yml` runs the reconciler's unit tests; it is scoped to PRs that
+  touch `reconciler/`, `tests/`, or the dependencies, so a policy-only PR
+  is gated purely on its policy files.
 - `apply.yml` runs on every merge to `main` (and on demand): a merge writes
   to the deployment immediately. This is the only path that writes.
 - `drift.yml` runs nightly (and on demand), read-only: it runs
