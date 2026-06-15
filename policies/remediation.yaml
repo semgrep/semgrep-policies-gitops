@@ -29,3 +29,12 @@ policies:
           values: [medium]
     actions:
       - type: pr_comment
+  - name: Comment on high-severity findings
+    active: true
+    filters:
+      mode: all
+      conditions:
+        - type: severity
+          values: [high]
+    actions:
+      - type: pr_comment
