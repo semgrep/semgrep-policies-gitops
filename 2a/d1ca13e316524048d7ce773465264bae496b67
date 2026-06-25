@@ -1,0 +1,24 @@
+tests/test_reconciler.py
+  s_016dc4ed4bc9a4::t_eb6bc93424e51e 199-212,218-292
+reconciler/bundles.py
+  s_016dc4ed4bc9a4::t_c8af0c4cda10bc 143-163
+reconciler/cli.py
+  s_016dc4ed4bc9a4::t_0adf021b66c1be 82-99
+  s_016dc4ed4bc9a4::t_cde1c7cf388716 122,136-138,146-156,164
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.3",
+  "base_commit_sha": "2ad1ca13e316524048d7ce773465264bae496b67",
+  "prompts": {},
+  "sessions": {
+    "s_016dc4ed4bc9a4": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "78a0dad0-21a8-41a3-bc47-99d2a1601201",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "Kevin Moses <kevin@semgrep.com>"
+    }
+  }
+}
