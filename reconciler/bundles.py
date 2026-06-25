@@ -140,3 +140,24 @@ def validate_remediation(path: Path, raw: dict[str, Any]) -> None:
         filters = policy.get("filters", {})
         if not isinstance(filters, dict):
             raise BundleError(f"{where} ({policy['name']}): `filters` must be a mapping")
+        # A policy must have at least one condition (an empty filter is rejected
+        # by the API), and a condition's mode is "any" or "none" ("all" is not
+        # supported). These mirror the server contract so a clearly-wrong file
+        # fails offline, before any API call.
+        conditions = filters.get("conditions", [])
+        if not isinstance(conditions, list) or not conditions:
+            raise BundleError(
+                f"{where} ({policy['name']}): `filters.conditions` must be a "
+                "non-empty list"
+            )
+        for condition in conditions:
+            if not isinstance(condition, dict):
+                raise BundleError(
+                    f"{where} ({policy['name']}): each condition must be a mapping"
+                )
+            mode = condition.get("mode")
+            if mode is not None and mode not in ("any", "none"):
+                raise BundleError(
+                    f"{where} ({policy['name']}): condition `mode` must be 'any' "
+                    f"or 'none', got {mode!r}"
+                )

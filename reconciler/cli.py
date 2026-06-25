@@ -79,6 +79,24 @@ def _print_remediation_diff(diff: dict[str, Any]) -> bool:
     return changed
 
 
+def _print_validation_errors(label: str, diff: dict[str, Any]) -> bool:
+    """Print any validation errors a dry run reported in-band.
+
+    A dry run returns 200 with `validation_errors` (and an empty diff) when the
+    candidate is invalid, so every problem is reported at once. Returns True if
+    any were present.
+    """
+    errors = diff.get("validation_errors") or []
+    for error in errors:
+        context = error.get("context") or {}
+        detail = ", ".join(f"{key}={value}" for key, value in sorted(context.items()))
+        slug = error.get("policy_slug")
+        scope = f" [{slug}]" if slug else ""
+        suffix = f" ({detail})" if detail else ""
+        print(f"  {label}: {error.get('code')}{scope} {error.get('message', '')}{suffix}")
+    return bool(errors)
+
+
 def cmd_export(client: PoliciesClient) -> int:
     code = client.get_detection_policy("code")
     bundles.write_detection_yaml(bundles.DETECTION_CODE_FILE, code.data)
@@ -101,6 +119,7 @@ def cmd_export(client: PoliciesClient) -> int:
 
 def cmd_plan(client: PoliciesClient, *, fail_on_diff: bool = False) -> int:
     changed = False
+    invalid = False
     for path, product in _DETECTION_TARGETS:
         raw = bundles.read_yaml(path)
         if not raw:
@@ -114,6 +133,9 @@ def cmd_plan(client: PoliciesClient, *, fail_on_diff: bool = False) -> int:
                 print(f"  detection/{product}: product not enabled, skipping")
                 continue
             raise
+        if _print_validation_errors(f"detection/{product}", diff):
+            invalid = True
+            continue
         changed |= _print_detection_diff(product, diff)
 
     remediation_raw = bundles.read_yaml(bundles.REMEDIATION_FILE)
@@ -121,7 +143,17 @@ def cmd_plan(client: PoliciesClient, *, fail_on_diff: bool = False) -> int:
         diff = client.dry_run_remediation_policies(
             bundles.remediation_to_bundle(remediation_raw)
         )
-        changed |= _print_remediation_diff(diff)
+        if _print_validation_errors("remediation", diff):
+            invalid = True
+        else:
+            changed |= _print_remediation_diff(diff)
+
+    # A dry run reports an invalid candidate in-band (200 with
+    # validation_errors); treat that as a hard failure, the same as a
+    # structural error from `validate`.
+    if invalid:
+        print("\nplan: bundle is invalid; fix the errors above and retry")
+        return 2
 
     if not changed:
         print("plan: live state matches this repo")
@@ -129,9 +161,7 @@ def cmd_plan(client: PoliciesClient, *, fail_on_diff: bool = False) -> int:
 
     # A pending diff is normal on a PR — it is exactly what the reviewer is
     # there to approve. Only fail when asked to gate on drift (the nightly
-    # drift check), so that a valid PR is not red just for proposing a
-    # change. Invalid candidates never reach here: the dry run raises a
-    # PoliciesApiError, which main() reports as a hard failure.
+    # drift check), so that a valid PR is not red just for proposing a change.
     print("\nplan: changes pending")
     return 1 if fail_on_diff else 0
 

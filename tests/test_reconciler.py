@@ -196,10 +196,97 @@ def test_plan_main_returns_2_on_invalid_bundle(monkeypatch):
     )
     responses.post(
         f"{_PREFIX}/remediation-policies:dryRun",
-        status=400,
-        json={"code": "MISSING_DEPENDENT_ACTION", "missing_companion": "pr_comment"},
+        json={
+            "creates": [],
+            "updates": [],
+            "deletes": [],
+            "state_version": "v1",
+            "validation_errors": [
+                {
+                    "code": "MISSING_DEPENDENT_ACTION",
+                    "message": "block requires a pr_comment action",
+                    "policy_slug": "block-only",
+                    "context": {"missing_companion": "pr_comment"},
+                }
+            ],
+        },
     )
     exit_code = cli.main(
         ["plan", "--deployment-id", str(_DEPLOYMENT), "--base-url", _BASE]
     )
     assert exit_code == 2
+
+
+@responses.activate
+def test_plan_returns_2_on_in_band_validation_errors():
+    _stub_plan_responses(
+        {
+            "creates": [],
+            "updates": [],
+            "deletes": [],
+            "state_version": "v1",
+            "validation_errors": [
+                {
+                    "code": "INVALID_CONDITION_VALUE",
+                    "message": "severity has unaccepted values",
+                    "policy_slug": "bad",
+                    "context": {"condition_type": "severity", "value": "nope"},
+                }
+            ],
+        }
+    )
+    assert cli.cmd_plan(_client()) == 2
+
+
+def test_validate_remediation_rejects_empty_conditions(tmp_path):
+    path = tmp_path / "remediation.yaml"
+    raw = {
+        "policies": [
+            {
+                "name": "x",
+                "filters": {"mode": "all", "conditions": []},
+                "actions": [{"type": "pr_comment"}],
+            }
+        ]
+    }
+    with pytest.raises(bundles.BundleError, match="non-empty list"):
+        bundles.validate_remediation(path, raw)
+
+
+def test_validate_remediation_rejects_unsupported_condition_mode(tmp_path):
+    path = tmp_path / "remediation.yaml"
+    raw = {
+        "policies": [
+            {
+                "name": "x",
+                "filters": {
+                    "mode": "all",
+                    "conditions": [
+                        {"type": "severity", "values": ["high"], "mode": "all"}
+                    ],
+                },
+                "actions": [{"type": "pr_comment"}],
+            }
+        ]
+    }
+    with pytest.raises(bundles.BundleError, match="'any' or 'none'"):
+        bundles.validate_remediation(path, raw)
+
+
+def test_validate_remediation_accepts_negated_condition(tmp_path):
+    path = tmp_path / "remediation.yaml"
+    raw = {
+        "policies": [
+            {
+                "name": "x",
+                "filters": {
+                    "mode": "all",
+                    "conditions": [
+                        {"type": "rule", "values": ["p/foo"], "mode": "none"}
+                    ],
+                },
+                "actions": [{"type": "pr_comment"}],
+            }
+        ]
+    }
+    bundles.validate_remediation(path, raw)  # does not raise
