@@ -1,0 +1,19 @@
+policies/remediation.yaml
+  s_d60e3ec716521a::t_184be3a8da451e 41-59
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.10",
+  "base_commit_sha": "9fe44d252cba1215c53a75878b7b3aafe334e638",
+  "prompts": {},
+  "sessions": {
+    "s_d60e3ec716521a": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "95d05f33-4e1f-471f-a562-9989e08f7a70",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "Kevin Moses <kevin@semgrep.com>"
+    }
+  }
+}
