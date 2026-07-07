@@ -2,8 +2,8 @@
 
 The client is intentionally thin: it knows the endpoint shapes and how to
 carry the ``state_version`` etag through the ``If-Match`` header, and it
-surfaces the API's structured error codes as exceptions. Everything else —
-diffing, slug derivation, concurrency — lives on the server.
+surfaces the API's structured error codes as exceptions. Everything else
+(diffing, slug derivation, concurrency) lives on the server.
 """
 
 from __future__ import annotations

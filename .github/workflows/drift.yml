@@ -1,5 +1,5 @@
 # Nightly drift detection. Read-only: it dry-runs the repo's policies
-# against the live deployment and fails if they diverge — e.g. someone
+# against the live deployment and fails if they diverge, e.g. someone
 # edited a policy in the Semgrep UI out of band. It never writes; applies
 # happen only on merge (see apply.yml). A failed run is the signal to
 # investigate and either revert the UI change or commit it to the repo.

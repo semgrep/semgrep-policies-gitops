@@ -1,4 +1,4 @@
-# Semgrep Code detection policy — which rules run on which projects.
+# Semgrep Code detection policy: which rules run on which projects.
 #
 # This is the desired state. `python -m reconciler.cli apply` makes the live
 # deployment match it; anything not listed here is removed on apply.
@@ -11,7 +11,7 @@ disabled:
   - python.lang.security.audit.exec-detected.exec-detected
 # Per-project / per-tag carve-outs. exception_type is `exclude` (skip the
 # rule on the target) or `include` (force it on). Target exactly one of
-# `project` (a repository name) or `project_tag_name` (a project tag) — the
+# `project` (a repository name) or `project_tag_name` (a project tag); the
 # reference must already exist in your deployment, or the apply is rejected
 # with UNKNOWN_REFERENCE. Example (uncomment and use a real tag/rule):
 #
