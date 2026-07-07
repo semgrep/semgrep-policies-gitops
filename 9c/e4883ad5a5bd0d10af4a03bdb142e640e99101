@@ -1,0 +1,38 @@
+README.md
+  s_d60e3ec716521a::t_9e7087da2e0467 1,5-7,9-10,16,18-22,25,50,58-59,66-67,73-75,77-78,85,91-93,97-113,117-119,123-124,128
+reconciler/bundles.py
+  s_d60e3ec716521a::t_aabc00f7d057b3 27
+  s_d60e3ec716521a::t_6c2e6ddcbcc3f4 38-39
+.github/workflows/drift.yml
+  s_d60e3ec716521a::t_979ad7f3cb4815 2
+.github/workflows/validate.yml
+  s_d60e3ec716521a::t_21f94d34157312 2-3
+policies/remediation.yaml
+  s_d60e3ec716521a::t_c6d1fd75cb3bc9 1
+.github/workflows/test.yml
+  s_d60e3ec716521a::t_3286d3e45283d4 3
+policies/detection-code.yaml
+  s_d60e3ec716521a::t_858d501aaed958 14
+  s_d60e3ec716521a::t_64e42eabcdfb21 1
+reconciler/client.py
+  s_d60e3ec716521a::t_7cebdfe827a4f6 5-6
+reconciler/cli.py
+  s_d60e3ec716521a::t_c4bc755f3b827e 162
+  s_d60e3ec716521a::t_a83386edcacd5b 6
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.10",
+  "base_commit_sha": "9ce4883ad5a5bd0d10af4a03bdb142e640e99101",
+  "prompts": {},
+  "sessions": {
+    "s_d60e3ec716521a": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "95d05f33-4e1f-471f-a562-9989e08f7a70",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "Kevin Moses <kevin@semgrep.com>"
+    }
+  }
+}
