@@ -24,7 +24,7 @@ _DETECTION_OUTPUT_ONLY = ("deployment_slug", "product")
 _REMEDIATION_OUTPUT_ONLY = ("deployment_slug",)
 
 
-# Policy files are tiny (a few KB). The cap is basic hygiene — it bounds
+# Policy files are tiny (a few KB). The cap is basic hygiene; it bounds
 # the input we hand to the YAML parser and rejects an obviously wrong file
 # before parsing. It is not a defense against a hand-crafted YAML
 # alias-expansion bomb; this repo relies on PR review for that, since every
@@ -35,8 +35,8 @@ _MAX_POLICY_FILE_BYTES = 256 * 1024
 class BundleError(ValueError):
     """A policy file is malformed or structurally wrong.
 
-    Raised before any API call, so honest mistakes — a YAML syntax error, a
-    wrong-shaped policy — are caught locally and on fork PRs (which have no
+    Raised before any API call, so honest mistakes (a YAML syntax error, a
+    wrong-shaped policy) are caught locally and on fork PRs (which have no
     API token), with a clear message instead of a stack trace.
     """
 

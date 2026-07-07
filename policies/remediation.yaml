@@ -1,4 +1,4 @@
-# Remediation policies — what happens when a finding matches.
+# Remediation policies: what happens when a finding matches.
 #
 # Each policy is a filter (conditions over finding attributes) plus actions.
 # `slug` is the stable identity: omit it on a new policy to derive it from

@@ -1,6 +1,6 @@
 # Unit tests for the reconciler code. Kept separate from validate.yml so a
 # policy-only PR is gated purely on the policy files (validate + plan) and
-# is not affected by the code test suite — and vice versa.
+# is not affected by the code test suite, and vice versa.
 name: test
 
 on:

@@ -3,7 +3,7 @@
 Four verbs model the GitOps loop:
 
   validate  parse and structurally check the YAML files offline (no token,
-            no network) — catches malformed YAML and wrong shapes fast
+            no network); catches malformed YAML and wrong shapes fast
   export    pull the live state into the YAML files (bootstrap or drift repair)
   plan      dry-run every bundle and print the diff; the API validates values
             and references, so a bad value fails here
@@ -159,7 +159,7 @@ def cmd_plan(client: PoliciesClient, *, fail_on_diff: bool = False) -> int:
         print("plan: live state matches this repo")
         return 0
 
-    # A pending diff is normal on a PR — it is exactly what the reviewer is
+    # A pending diff is normal on a PR; it is exactly what the reviewer is
     # there to approve. Only fail when asked to gate on drift (the nightly
     # drift check), so that a valid PR is not red just for proposing a change.
     print("\nplan: changes pending")

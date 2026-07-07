@@ -1,6 +1,6 @@
 # Fast, offline structural validation of the policy files. Needs no token
-# and no network, so it runs on every PR — including PRs from forks, which
-# do not receive repository secrets — and catches malformed YAML or
+# and no network, so it runs on every PR, including PRs from forks, which
+# do not receive repository secrets, and catches malformed YAML or
 # wrong-shaped policies before the API round-trip in plan.yml.
 name: validate
 
