@@ -26,7 +26,7 @@ policies:
       mode: all
       conditions:
         - type: severity
-          values: [medium]
+          values: [moderate]
     actions:
       - type: pr_comment
   - name: Comment on high-severity findings
