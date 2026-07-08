@@ -38,3 +38,22 @@ policies:
           values: [high]
     actions:
       - type: pr_comment
+  # Gate the most dangerous injection classes. `vulnerability_class` is a SAST
+  # (Semgrep Code) condition derived from each rule's CWE metadata; its accepted
+  # values are the vulnerability classes published by the vocab endpoint. Values
+  # are quoted because some contain spaces and parentheses.
+  - name: Block high-impact injection classes
+    active: true
+    filters:
+      mode: all
+      conditions:
+        - type: vulnerability_class
+          values:
+            - "SQL Injection"
+            - "Command Injection"
+            - "Code Injection"
+            - "Server-Side Request Forgery (SSRF)"
+            - "Path Traversal"
+    actions:
+      - type: block
+      - type: pr_comment
